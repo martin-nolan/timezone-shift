@@ -177,7 +177,7 @@ export function nextClockChange(from?: Date): NextChange | null {
 function findDSTTransitions(
   year: number,
   timezone: string
-): { start: Date; end: Date } | null {
+): { start: Date, end: Date } | null {
   const metadata = getTimezoneMetadata(timezone);
 
   if (!metadata.dstOffset) {
