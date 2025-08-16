@@ -1,6 +1,9 @@
-# Timezone Shift
+# timezone-shift
 
-A lightweight, dependency-free timezone utility with multi-timezone DST support for TypeScript/JavaScript.
+[![npm version](https://img.shields.io/npm/v/timezone-shift?color=blue)](https://www.npmjs.com/package/timezone-shift)
+[![CI](https://github.com/martin-nolan/timezone-shift/actions/workflows/ci.yml/badge.svg)](https://github.com/martin-nolan/timezone-shift/actions)
+
+Lightweight, dependency-free timezone utility with multi-timezone DST support for TypeScript/JavaScript.
 
 ## Features
 
@@ -20,57 +23,19 @@ npm install timezone-shift
 ## Quick Start
 
 ```typescript
-import {
-  isDST,
-  toTimezoneString,
-  toTimezoneParts,
-  dstTransitionDates,
-} from "timezone-shift";
+import { isDST, toTimezoneParts, dstTransitionDates } from "timezone-shift";
 
-const date = new Date("2024-07-15T12:00:00Z");
+// Check if London is in DST
+const londonDST = isDST(new Date(), "Europe/London");
 
-// Check DST status
-console.log(isDST(date, "Europe/London")); // true (BST)
-console.log(isDST(date, "Asia/Tokyo")); // false (no DST)
+// Get timezone parts
+const parts = toTimezoneParts(new Date(), "America/New_York");
 
-// Format dates in different timezones
-console.log(toTimezoneString(date, "America/New_York")); // "2024-07-15 08:00:00 EDT"
-console.log(toTimezoneString(date, "Europe/London")); // "2024-07-15 13:00:00 BST"
-
-// Extract timezone components
-const parts = toTimezoneParts(date, "Europe/London");
-console.log(parts); // { year: 2024, month: 7, day: 15, hour: 13, minute: 0, second: 0 }
-
-// Get DST transition dates
-const transitions = dstTransitionDates(2024, "America/New_York");
-console.log(transitions?.dstStartUtc); // 2024-03-10T07:00:00.000Z
+// Get DST transitions for the year
+const transitions = dstTransitionDates(2025, "Europe/London");
 ```
 
-## Core Functions
-
-| Function                             | Description                                 |
-| ------------------------------------ | ------------------------------------------- |
-| `isDST(date, timezone)`              | Check if date is in DST                     |
-| `toTimezoneString(date, timezone)`   | Format date as timezone string              |
-| `toTimezoneParts(date, timezone)`    | Extract timezone date components            |
-| `fromTimezoneParts(parts, timezone)` | Create UTC date from timezone parts         |
-| `dstTransitionDates(year, timezone)` | Get DST start/end dates for year            |
-| `inWorkingHours(date, timezone)`     | Check if date is in working hours (9-17:30) |
-| `isWorkingDay(date)`                 | Check if date is a weekday                  |
-
-## Supported Timezones
-
-- `Europe/London` (GMT/BST)
-- `America/New_York` (EST/EDT)
-- `America/Los_Angeles` (PST/PDT)
-- `Europe/Paris` (CET/CEST)
-- `Europe/Berlin` (CET/CEST)
-- `Asia/Tokyo` (JST, no DST)
-- `Australia/Sydney` (AEDT/AEST)
-
-## Advanced Usage
-
-### Working with Business Hours
+## Working Hours & Business Logic
 
 ```typescript
 import {
@@ -92,7 +57,7 @@ console.log(isWorkingDay(meetingTime)); // true (if Monday-Friday)
 console.log(inWorkingHoursLondon(meetingTime)); // true
 ```
 
-### Handling DST Transitions
+## Handling DST Transitions
 
 ```typescript
 import { dstTransitionDates, isDST } from "timezone-shift";
@@ -108,6 +73,22 @@ const afterDST = new Date("2024-04-01T12:00:00Z");
 
 console.log(isDST(beforeDST, "Europe/London")); // false (GMT)
 console.log(isDST(afterDST, "Europe/London")); // true (BST)
+```
+
+## Development
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/martin-nolan/timezone-shift.git
+cd timezone-shift
+npm install
+```
+
+Run tests:
+
+```bash
+npm test
 ```
 
 ## License
