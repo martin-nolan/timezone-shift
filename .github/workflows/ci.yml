@@ -1,0 +1,177 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Build project
+        run: npm run build
+
+      - name: Upload coverage reports to Codecov
+        if: matrix.node-version == '20.x'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  build-test:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Test built package
+        run: |
+          npm pack
+          mkdir test-package
+          cd test-package
+          npm init -y
+          npm install ../timezone-shift-*.tgz
+          node -e "
+            const { isBST, isDST, toTimezoneString } = require('timezone-shift');
+            const date = new Date('2024-07-15T12:00:00Z');
+            console.log('BST test:', isBST(date));
+            console.log('DST test:', isDST(date, 'America/New_York'));
+            console.log('Format test:', toTimezoneString(date, 'Europe/London'));
+            console.log('✅ Package test successful');
+          "
+
+  cross-platform-test:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build project
+        run: npm run build
+
+  performance-benchmark:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run performance benchmarks
+        run: |
+          node -e "
+            const { isDST, toTimezoneString, toTimezoneParts, fromTimezoneParts } = require('./dist/index.js');
+            
+            console.log('🚀 Performance Benchmarks');
+            console.log('========================');
+            
+            const iterations = 10000;
+            const testDate = new Date('2024-07-15T12:00:00Z');
+            const testParts = { year: 2024, month: 7, day: 15, hour: 14, minute: 30, second: 0 };
+            
+            // isDST benchmark
+            const start1 = performance.now();
+            for (let i = 0; i < iterations; i++) {
+              isDST(testDate, 'Europe/London');
+            }
+            const end1 = performance.now();
+            console.log(\`isDST: \${((end1 - start1) / iterations).toFixed(3)}ms avg (\${iterations} iterations)\`);
+            
+            // toTimezoneString benchmark
+            const start2 = performance.now();
+            for (let i = 0; i < iterations; i++) {
+              toTimezoneString(testDate, 'Europe/London');
+            }
+            const end2 = performance.now();
+            console.log(\`toTimezoneString: \${((end2 - start2) / iterations).toFixed(3)}ms avg (\${iterations} iterations)\`);
+            
+            // toTimezoneParts benchmark
+            const start3 = performance.now();
+            for (let i = 0; i < iterations; i++) {
+              toTimezoneParts(testDate, 'Europe/London');
+            }
+            const end3 = performance.now();
+            console.log(\`toTimezoneParts: \${((end3 - start3) / iterations).toFixed(3)}ms avg (\${iterations} iterations)\`);
+            
+            // fromTimezoneParts benchmark
+            const start4 = performance.now();
+            for (let i = 0; i < iterations; i++) {
+              fromTimezoneParts(testParts, 'Europe/London');
+            }
+            const end4 = performance.now();
+            console.log(\`fromTimezoneParts: \${((end4 - start4) / iterations).toFixed(3)}ms avg (\${iterations} iterations)\`);
+            
+            console.log('✅ Benchmark completed');
+          "

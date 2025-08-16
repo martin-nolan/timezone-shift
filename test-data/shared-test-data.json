@@ -1,0 +1,340 @@
+{
+  "version": "1.0.0",
+  "description": "Shared test data for cross-environment validation",
+  "generatedAt": "2025-01-16T12:00:00.000Z",
+  "testSuites": {
+    "dstDetection": {
+      "description": "DST detection test cases across multiple timezones and years",
+      "testCases": [
+        {
+          "name": "Europe/London BST detection",
+          "timezone": "Europe/London",
+          "cases": [
+            {
+              "dateUtc": "2024-07-15T12:00:00.000Z",
+              "expectedDst": true,
+              "description": "Summer date should be BST"
+            },
+            {
+              "dateUtc": "2024-01-15T12:00:00.000Z",
+              "expectedDst": false,
+              "description": "Winter date should be GMT"
+            },
+            {
+              "dateUtc": "2024-03-31T00:59:00.000Z",
+              "expectedDst": false,
+              "description": "Just before BST transition"
+            },
+            {
+              "dateUtc": "2024-03-31T01:01:00.000Z",
+              "expectedDst": true,
+              "description": "Just after BST transition"
+            },
+            {
+              "dateUtc": "2024-10-27T00:59:00.000Z",
+              "expectedDst": true,
+              "description": "Just before GMT transition"
+            },
+            {
+              "dateUtc": "2024-10-27T01:01:00.000Z",
+              "expectedDst": false,
+              "description": "Just after GMT transition"
+            }
+          ]
+        },
+        {
+          "name": "America/New_York EDT detection",
+          "timezone": "America/New_York",
+          "cases": [
+            {
+              "dateUtc": "2024-07-15T16:00:00.000Z",
+              "expectedDst": true,
+              "description": "Summer date should be EDT"
+            },
+            {
+              "dateUtc": "2024-01-15T17:00:00.000Z",
+              "expectedDst": false,
+              "description": "Winter date should be EST"
+            },
+            {
+              "dateUtc": "2024-03-10T06:59:00.000Z",
+              "expectedDst": false,
+              "description": "Just before EDT transition"
+            },
+            {
+              "dateUtc": "2024-03-10T07:01:00.000Z",
+              "expectedDst": true,
+              "description": "Just after EDT transition"
+            }
+          ]
+        },
+        {
+          "name": "Asia/Tokyo no DST",
+          "timezone": "Asia/Tokyo",
+          "cases": [
+            {
+              "dateUtc": "2024-07-15T12:00:00.000Z",
+              "expectedDst": false,
+              "description": "Summer date - no DST in Japan"
+            },
+            {
+              "dateUtc": "2024-01-15T12:00:00.000Z",
+              "expectedDst": false,
+              "description": "Winter date - no DST in Japan"
+            }
+          ]
+        }
+      ]
+    },
+    "timeConversion": {
+      "description": "Time conversion test cases",
+      "testCases": [
+        {
+          "name": "UTC to timezone parts",
+          "cases": [
+            {
+              "utcDate": "2024-07-15T12:00:00.000Z",
+              "timezone": "Europe/London",
+              "expectedParts": {
+                "year": 2024,
+                "month": 7,
+                "day": 15,
+                "hour": 13,
+                "minute": 0,
+                "second": 0
+              },
+              "description": "UTC noon to BST (UTC+1)"
+            },
+            {
+              "utcDate": "2024-01-15T12:00:00.000Z",
+              "timezone": "Europe/London",
+              "expectedParts": {
+                "year": 2024,
+                "month": 1,
+                "day": 15,
+                "hour": 12,
+                "minute": 0,
+                "second": 0
+              },
+              "description": "UTC noon to GMT (UTC+0)"
+            },
+            {
+              "utcDate": "2024-07-15T16:00:00.000Z",
+              "timezone": "America/New_York",
+              "expectedParts": {
+                "year": 2024,
+                "month": 7,
+                "day": 15,
+                "hour": 12,
+                "minute": 0,
+                "second": 0
+              },
+              "description": "UTC 4pm to EDT noon (UTC-4)"
+            },
+            {
+              "utcDate": "2024-07-15T03:00:00.000Z",
+              "timezone": "Asia/Tokyo",
+              "expectedParts": {
+                "year": 2024,
+                "month": 7,
+                "day": 15,
+                "hour": 12,
+                "minute": 0,
+                "second": 0
+              },
+              "description": "UTC 3am to JST noon (UTC+9)"
+            }
+          ]
+        },
+        {
+          "name": "Timezone parts to UTC",
+          "cases": [
+            {
+              "parts": {
+                "year": 2024,
+                "month": 7,
+                "day": 15,
+                "hour": 13,
+                "minute": 30,
+                "second": 45
+              },
+              "timezone": "Europe/London",
+              "expectedUtc": "2024-07-15T12:30:45.000Z",
+              "description": "BST parts to UTC"
+            },
+            {
+              "parts": {
+                "year": 2024,
+                "month": 1,
+                "day": 15,
+                "hour": 12,
+                "minute": 30,
+                "second": 45
+              },
+              "timezone": "Europe/London",
+              "expectedUtc": "2024-01-15T12:30:45.000Z",
+              "description": "GMT parts to UTC"
+            }
+          ]
+        }
+      ]
+    },
+    "dstTransitions": {
+      "description": "DST transition date calculations",
+      "testCases": [
+        {
+          "name": "Europe/London 2024 transitions",
+          "timezone": "Europe/London",
+          "year": 2024,
+          "expectedTransitions": {
+            "dstStartUtc": "2024-03-31T01:00:00.000Z",
+            "dstEndUtc": "2024-10-27T01:00:00.000Z"
+          },
+          "description": "BST starts last Sunday in March, ends last Sunday in October"
+        },
+        {
+          "name": "America/New_York 2024 transitions",
+          "timezone": "America/New_York",
+          "year": 2024,
+          "expectedTransitions": {
+            "dstStartUtc": "2024-03-10T07:00:00.000Z",
+            "dstEndUtc": "2024-11-03T06:00:00.000Z"
+          },
+          "description": "EDT starts second Sunday in March, ends first Sunday in November"
+        },
+        {
+          "name": "Asia/Tokyo no transitions",
+          "timezone": "Asia/Tokyo",
+          "year": 2024,
+          "expectedTransitions": null,
+          "description": "No DST transitions in Japan"
+        }
+      ]
+    },
+    "timeFormatting": {
+      "description": "Time formatting test cases",
+      "testCases": [
+        {
+          "name": "Timezone string formatting",
+          "cases": [
+            {
+              "utcDate": "2024-07-15T12:00:00.000Z",
+              "timezone": "Europe/London",
+              "expectedFormat": "2024-07-15 13:00:00 BST",
+              "description": "Summer time with BST abbreviation"
+            },
+            {
+              "utcDate": "2024-01-15T12:00:00.000Z",
+              "timezone": "Europe/London",
+              "expectedFormat": "2024-01-15 12:00:00 GMT",
+              "description": "Winter time with GMT abbreviation"
+            },
+            {
+              "utcDate": "2024-07-15T16:00:00.000Z",
+              "timezone": "America/New_York",
+              "expectedFormat": "2024-07-15 12:00:00 EDT",
+              "description": "EDT formatting"
+            },
+            {
+              "utcDate": "2024-07-15T03:00:00.000Z",
+              "timezone": "Asia/Tokyo",
+              "expectedFormat": "2024-07-15 12:00:00 GMT+09:00",
+              "description": "No abbreviation fallback to GMT offset"
+            }
+          ]
+        },
+        {
+          "name": "UTC string formatting",
+          "cases": [
+            {
+              "date": "2024-07-15T14:35:42.123Z",
+              "expectedFormat": "2024-07-15 14:35:42.123000Z",
+              "description": "UTC with microseconds"
+            }
+          ]
+        }
+      ]
+    },
+    "workingHours": {
+      "description": "Working hours and business day calculations",
+      "testCases": [
+        {
+          "name": "Working hours detection",
+          "cases": [
+            {
+              "utcDate": "2024-07-15T13:00:00.000Z",
+              "timezone": "Europe/London",
+              "workingHours": { "start": "09:00", "end": "17:30" },
+              "expected": true,
+              "description": "14:00 BST should be working hours"
+            },
+            {
+              "utcDate": "2024-07-15T20:00:00.000Z",
+              "timezone": "Europe/London",
+              "workingHours": { "start": "09:00", "end": "17:30" },
+              "expected": false,
+              "description": "21:00 BST should be outside working hours"
+            }
+          ]
+        },
+        {
+          "name": "Working day detection",
+          "cases": [
+            {
+              "utcDate": "2024-07-15T12:00:00.000Z",
+              "timezone": "Europe/London",
+              "workingDays": [1, 2, 3, 4, 5],
+              "expected": true,
+              "description": "Monday should be a working day"
+            },
+            {
+              "utcDate": "2024-07-13T12:00:00.000Z",
+              "timezone": "Europe/London",
+              "workingDays": [1, 2, 3, 4, 5],
+              "expected": false,
+              "description": "Saturday should not be a working day"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "performanceBenchmarks": {
+    "description": "Performance benchmark test cases",
+    "operations": [
+      {
+        "name": "isDST_performance",
+        "function": "isDST",
+        "iterations": 1000,
+        "testCase": {
+          "date": "2024-07-15T12:00:00.000Z",
+          "timezone": "Europe/London"
+        },
+        "expectedMaxMs": 500,
+        "description": "DST detection should complete within 500ms for 1k iterations"
+      },
+      {
+        "name": "toTimezoneParts_performance",
+        "function": "toTimezoneParts",
+        "iterations": 1000,
+        "testCase": {
+          "date": "2024-07-15T12:00:00.000Z",
+          "timezone": "Europe/London"
+        },
+        "expectedMaxMs": 500,
+        "description": "Time conversion should complete within 500ms for 1k iterations"
+      },
+      {
+        "name": "dstTransitionDates_performance",
+        "function": "dstTransitionDates",
+        "iterations": 100,
+        "testCase": {
+          "year": 2024,
+          "timezone": "Europe/London"
+        },
+        "expectedMaxMs": 5000,
+        "description": "DST transition calculation should complete within 5000ms for 100 iterations"
+      }
+    ]
+  }
+}
