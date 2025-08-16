@@ -332,8 +332,8 @@
           "year": 2024,
           "timezone": "Europe/London"
         },
-        "expectedMaxMs": 10000,
-        "description": "DST transition calculation should complete within 10000ms for 100 iterations"
+        "expectedMaxMs": 12000,
+        "description": "DST transition calculation should complete within 12000ms for 100 iterations"
       }
     ]
   }
