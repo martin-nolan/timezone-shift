@@ -24,11 +24,12 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
 
+      - name: Remove package-lock.json
+        run: rm -f package-lock.json
+
       - name: Install dependencies
         run: |
-          # Clear npm cache and remove package-lock to handle rollup dependency issues
           npm cache clean --force
-          rm -f package-lock.json
           npm install
 
       - name: Run linting
@@ -107,11 +108,13 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
 
+      - name: Remove package-lock.json (cross-platform)
+        shell: bash
+        run: rm -f package-lock.json
+
       - name: Install dependencies
         run: |
-          # Clear npm cache and remove package-lock to handle rollup dependency issues
           npm cache clean --force
-          rm -f package-lock.json
           npm install
 
       - name: Run tests
