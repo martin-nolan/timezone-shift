@@ -65,9 +65,15 @@ export function toTimezoneString(
   const year = parts.find((p) => p.type === "year")?.value ?? "0000";
   const month = parts.find((p) => p.type === "month")?.value ?? "00";
   const day = parts.find((p) => p.type === "day")?.value ?? "00";
-  const hour = parts.find((p) => p.type === "hour")?.value ?? "00";
+  let hour = parts.find((p) => p.type === "hour")?.value ?? "00";
   const minute = parts.find((p) => p.type === "minute")?.value ?? "00";
   const second = parts.find((p) => p.type === "second")?.value ?? "00";
+
+  // Handle the case where Intl.DateTimeFormat returns "24:00:00" for midnight
+  // Some locales/environments return "24:00:00" instead of "00:00:00"
+  if (hour === "24") {
+    hour = "00";
+  }
 
   // Determine timezone abbreviation
   const tzAbbreviation = getTimezoneAbbreviation(date, timezone);
