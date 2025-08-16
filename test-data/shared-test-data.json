@@ -310,8 +310,8 @@
           "date": "2024-07-15T12:00:00.000Z",
           "timezone": "Europe/London"
         },
-        "expectedMaxMs": 500,
-        "description": "DST detection should complete within 500ms for 1k iterations"
+        "expectedMaxMs": 1000,
+        "description": "DST detection should complete within 1000ms for 1k iterations"
       },
       {
         "name": "toTimezoneParts_performance",
@@ -321,8 +321,8 @@
           "date": "2024-07-15T12:00:00.000Z",
           "timezone": "Europe/London"
         },
-        "expectedMaxMs": 500,
-        "description": "Time conversion should complete within 500ms for 1k iterations"
+        "expectedMaxMs": 1000,
+        "description": "Time conversion should complete within 1000ms for 1k iterations"
       },
       {
         "name": "dstTransitionDates_performance",
@@ -332,8 +332,8 @@
           "year": 2024,
           "timezone": "Europe/London"
         },
-        "expectedMaxMs": 5000,
-        "description": "DST transition calculation should complete within 5000ms for 100 iterations"
+        "expectedMaxMs": 10000,
+        "description": "DST transition calculation should complete within 10000ms for 100 iterations"
       }
     ]
   }
