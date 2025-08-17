@@ -3,6 +3,8 @@
 [![npm version](https://img.shields.io/npm/v/timezone-shift?color=blue)](https://www.npmjs.com/package/timezone-shift)
 [![CI](https://github.com/martin-nolan/timezone-shift/actions/workflows/ci.yml/badge.svg)](https://github.com/martin-nolan/timezone-shift/actions)
 
+🚀 **[Live Demo](https://timezone-shift-demo.netlify.app/)**
+
 Lightweight, dependency-free timezone utility with multi-timezone DST support for TypeScript/JavaScript.
 
 ## Features
