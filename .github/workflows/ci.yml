@@ -82,11 +82,14 @@ jobs:
           npm init -y
           npm install ../timezone-shift-*.tgz
           node -e "
-            const { isBST, isDST, toTimezoneString } = require('timezone-shift');
+            const pkg = require('timezone-shift');
+            const { isBST, isDST, toTimezoneString, isDSTNow, getCurrentTimezoneParts } = pkg;
             const date = new Date('2024-07-15T12:00:00Z');
             console.log('BST test:', isBST(date));
             console.log('DST test:', isDST(date, 'America/New_York'));
             console.log('Format test:', toTimezoneString(date, 'Europe/London'));
+            console.log('Auto-detection test:', typeof isDSTNow === 'function');
+            console.log('Current parts test:', typeof getCurrentTimezoneParts === 'function');
             console.log('✅ Package test successful');
           "
 
@@ -146,46 +149,52 @@ jobs:
       - name: Run performance benchmarks
         run: |
           node -e "
-            const { isDST, toTimezoneString, toTimezoneParts, fromTimezoneParts } = require('./dist/index.js');
-            
-            console.log('🚀 Performance Benchmarks');
-            console.log('========================');
-            
-            const iterations = 10000;
-            const testDate = new Date('2024-07-15T12:00:00Z');
-            const testParts = { year: 2024, month: 7, day: 15, hour: 14, minute: 30, second: 0 };
-            
-            // isDST benchmark
-            const start1 = performance.now();
-            for (let i = 0; i < iterations; i++) {
-              isDST(testDate, 'Europe/London');
+            try {
+              const pkg = require('./dist/index.js');
+              const { isDST, toTimezoneString, toTimezoneParts, fromTimezoneParts } = pkg;
+              
+              console.log('🚀 Performance Benchmarks');
+              console.log('========================');
+              
+              const iterations = 1000; // Reduced for CI
+              const testDate = new Date('2024-07-15T12:00:00Z');
+              const testParts = { year: 2024, month: 7, day: 15, hour: 14, minute: 30, second: 0 };
+              
+              // isDST benchmark
+              const start1 = performance.now();
+              for (let i = 0; i < iterations; i++) {
+                isDST(testDate, 'Europe/London');
+              }
+              const end1 = performance.now();
+              console.log(\`isDST: \${((end1 - start1) / iterations).toFixed(3)}ms avg (\${iterations} iterations)\`);
+              
+              // toTimezoneString benchmark
+              const start2 = performance.now();
+              for (let i = 0; i < iterations; i++) {
+                toTimezoneString(testDate, 'Europe/London');
+              }
+              const end2 = performance.now();
+              console.log(\`toTimezoneString: \${((end2 - start2) / iterations).toFixed(3)}ms avg (\${iterations} iterations)\`);
+              
+              // toTimezoneParts benchmark
+              const start3 = performance.now();
+              for (let i = 0; i < iterations; i++) {
+                toTimezoneParts(testDate, 'Europe/London');
+              }
+              const end3 = performance.now();
+              console.log(\`toTimezoneParts: \${((end3 - start3) / iterations).toFixed(3)}ms avg (\${iterations} iterations)\`);
+              
+              // fromTimezoneParts benchmark
+              const start4 = performance.now();
+              for (let i = 0; i < iterations; i++) {
+                fromTimezoneParts(testParts, 'Europe/London');
+              }
+              const end4 = performance.now();
+              console.log(\`fromTimezoneParts: \${((end4 - start4) / iterations).toFixed(3)}ms avg (\${iterations} iterations)\`);
+              
+              console.log('✅ Benchmark completed');
+            } catch (error) {
+              console.error('❌ Benchmark failed:', error.message);
+              process.exit(1);
             }
-            const end1 = performance.now();
-            console.log(`isDST: ${((end1 - start1) / iterations).toFixed(3)}ms avg (${iterations} iterations)`);
-            
-            // toTimezoneString benchmark
-            const start2 = performance.now();
-            for (let i = 0; i < iterations; i++) {
-              toTimezoneString(testDate, 'Europe/London');
-            }
-            const end2 = performance.now();
-            console.log(`toTimezoneString: ${((end2 - start2) / iterations).toFixed(3)}ms avg (${iterations} iterations)`);
-            
-            // toTimezoneParts benchmark
-            const start3 = performance.now();
-            for (let i = 0; i < iterations; i++) {
-              toTimezoneParts(testDate, 'Europe/London');
-            }
-            const end3 = performance.now();
-            console.log(`toTimezoneParts: ${((end3 - start3) / iterations).toFixed(3)}ms avg (${iterations} iterations)`);
-            
-            // fromTimezoneParts benchmark
-            const start4 = performance.now();
-            for (let i = 0; i < iterations; i++) {
-              fromTimezoneParts(testParts, 'Europe/London');
-            }
-            const end4 = performance.now();
-            console.log(`fromTimezoneParts: ${((end4 - start4) / iterations).toFixed(3)}ms avg (${iterations} iterations)`);
-            
-            console.log('✅ Benchmark completed');
           "
