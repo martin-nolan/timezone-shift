@@ -2,14 +2,15 @@
  * Time formatting utilities for timezone-aware string output
  */
 
+import { getTimezoneMetadata } from "./timezone-registry.js";
 import {
-  getTimezoneMetadata,
+  validateDate,
+  validateTimezone,
   validatePlatformTimezone,
-} from "./timezone-registry.js";
-import { validateDate, validateTimezone } from "./validator.js";
-import { formatOffset } from "./utils.js";
+} from "./utils/validation.js";
+import { formatOffset } from "./utils/formatting.js";
 import { isDST } from "./dst-detector.js";
-import { DEFAULT_TIMEZONE } from "./index.js";
+import { timezoneDetector } from "./timezone-detector.js";
 
 /**
  * Format a Date as a timezone-aware string in "YYYY-MM-DD HH:mm:ss TZ" format
@@ -19,20 +20,27 @@ import { DEFAULT_TIMEZONE } from "./index.js";
  * (e.g., BST, EST, EDT) and falls back to GMT offset format for timezones without
  * standard abbreviations.
  *
+ * When no timezone is provided, automatically detects the user's timezone.
+ *
  * @param date - The date to format (must be a valid Date object)
- * @param timezone - IANA timezone identifier (defaults to 'Europe/London')
+ * @param timezone - IANA timezone identifier (optional, auto-detects if omitted)
  * @returns Formatted string in "YYYY-MM-DD HH:mm:ss TZ" format
  *
  * @throws {Error} If date is invalid (NaN) or outside supported range (1970-2100)
  * @throws {Error} If timezone is not supported or unavailable on platform
+ * @throws {TimezoneDetectionError} If timezone detection fails and fallback is invalid
  *
  * @example
  * ```typescript
  * const utcDate = new Date('2024-07-15T12:00:00Z');
  *
+ * // With explicit timezone
  * console.log(toTimezoneString(utcDate, 'Europe/London'));       // "2024-07-15 13:00:00 BST"
  * console.log(toTimezoneString(utcDate, 'America/New_York'));    // "2024-07-15 08:00:00 EDT"
  * console.log(toTimezoneString(utcDate, 'Asia/Tokyo'));          // "2024-07-15 21:00:00 GMT+09:00"
+ *
+ * // With auto-detection (uses user's timezone)
+ * console.log(toTimezoneString(utcDate));                        // Formatted in user's detected timezone
  *
  * // Winter time (standard time)
  * const winterDate = new Date('2024-01-15T12:00:00Z');
@@ -40,18 +48,18 @@ import { DEFAULT_TIMEZONE } from "./index.js";
  * console.log(toTimezoneString(winterDate, 'America/New_York')); // "2024-01-15 07:00:00 EST"
  * ```
  */
-export function toTimezoneString(
-  date: Date,
-  timezone: string = DEFAULT_TIMEZONE
-): string {
+export function toTimezoneString(date: Date, timezone?: string): string {
   validateDate(date);
-  validateTimezone(timezone);
 
-  validatePlatformTimezone(timezone);
+  // Use auto-detection if no timezone provided
+  const effectiveTimezone = timezone ?? timezoneDetector.getDetectedTimezone();
+  validateTimezone(effectiveTimezone);
+
+  validatePlatformTimezone(effectiveTimezone);
 
   // Get timezone-local time components
   const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timezone,
+    timeZone: effectiveTimezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -76,7 +84,7 @@ export function toTimezoneString(
   }
 
   // Determine timezone abbreviation
-  const tzAbbreviation = getTimezoneAbbreviation(date, timezone);
+  const tzAbbreviation = getTimezoneAbbreviation(date, effectiveTimezone);
 
   return `${year}-${month}-${day} ${hour}:${minute}:${second} ${tzAbbreviation}`;
 }

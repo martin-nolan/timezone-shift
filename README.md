@@ -5,16 +5,16 @@
 
 🚀 **[Live Demo](https://timezone-shift-demo.netlify.app/)**
 
-Lightweight, dependency-free timezone utility with multi-timezone DST support for TypeScript/JavaScript.
+Lightweight timezone utility with automatic detection and DST support for TypeScript/JavaScript.
 
 ## Features
 
-- 🌍 **Multi-timezone support**: Europe/London, America/New_York, America/Los_Angeles, Europe/Paris, Europe/Berlin, Asia/Tokyo, Australia/Sydney
-- 🕒 **Accurate DST handling**: Uses platform timezone databases for always-current DST rules
-- 🪶 **Lightweight**: Zero external dependencies, minimal footprint
-- 🔧 **Type-safe**: Complete TypeScript definitions
-- 🌐 **Cross-platform**: Works in Node.js and browsers
-- 🧪 **Well-tested**: 162+ tests including DST edge cases
+- 🤖 **Auto timezone detection** - Zero-config for browser and Node.js
+- 🌍 **Universal timezone support** - Any valid IANA timezone
+- 🕒 **Accurate DST handling** - Uses platform timezone databases
+- 🪶 **Zero dependencies** - Minimal footprint
+- 🔧 **Type-safe** - Complete TypeScript definitions
+- 🔄 **Backward compatible** - Existing code works unchanged
 
 ## Installation
 
@@ -25,78 +25,78 @@ npm install timezone-shift
 ## Quick Start
 
 ```typescript
-import { isDST, toTimezoneParts, dstTransitionDates } from "timezone-shift";
+import { isDSTNow, getCurrentTimezoneParts, formatNow } from "timezone-shift";
 
-// Check if London is in DST
+// Auto-detection (new)
+const isInDST = isDSTNow();
+const parts = getCurrentTimezoneParts();
+const formatted = formatNow();
+
+// Traditional usage (still works)
+import { isDST, toTimezoneParts } from "timezone-shift";
 const londonDST = isDST(new Date(), "Europe/London");
-
-// Get timezone parts
-const parts = toTimezoneParts(new Date(), "America/New_York");
-
-// Get DST transitions for the year
-const transitions = dstTransitionDates(2025, "Europe/London");
+const nyParts = toTimezoneParts(new Date(), "America/New_York");
 ```
 
-## Working Hours & Business Logic
+## Core Functions
+
+### DST Detection
 
 ```typescript
-import {
-  inWorkingHours,
-  isWorkingDay,
-  inWorkingHoursLondon,
-} from "timezone-shift";
+import { isDST, isDSTNow } from "timezone-shift";
 
-const meetingTime = new Date("2024-07-15T14:30:00Z");
-
-// Default working hours: 9:00-17:30 local time
-console.log(inWorkingHours(meetingTime, "Europe/London")); // true
-console.log(inWorkingHours(meetingTime, "America/New_York")); // true (10:30 EDT)
-
-// Check if it's a working day (Monday-Friday)
-console.log(isWorkingDay(meetingTime)); // true (if Monday-Friday)
-
-// London-specific convenience function
-console.log(inWorkingHoursLondon(meetingTime)); // true
+isDST(date, "Europe/London"); // Check specific timezone
+isDSTNow(); // Check current timezone
 ```
 
-## Handling DST Transitions
+### Time Conversion
 
 ```typescript
-import { dstTransitionDates, isDST } from "timezone-shift";
+import { toTimezoneParts, getCurrentTimezoneParts } from "timezone-shift";
 
-// Get DST boundaries for a year
-const ukTransitions = dstTransitionDates(2024, "Europe/London");
-console.log(ukTransitions?.dstStartUtc); // 2024-03-31T01:00:00.000Z (BST starts)
-console.log(ukTransitions?.dstEndUtc); // 2024-10-27T01:00:00.000Z (GMT resumes)
-
-// Test dates around transitions
-const beforeDST = new Date("2024-03-30T12:00:00Z");
-const afterDST = new Date("2024-04-01T12:00:00Z");
-
-console.log(isDST(beforeDST, "Europe/London")); // false (GMT)
-console.log(isDST(afterDST, "Europe/London")); // true (BST)
+toTimezoneParts(date, timezone); // Convert to timezone parts
+getCurrentTimezoneParts(); // Get current timezone parts
 ```
 
-## Development
+### Working Hours
 
-Clone the repository and install dependencies:
+```typescript
+import { inWorkingHours, inWorkingHoursNow } from "timezone-shift";
 
-```bash
-git clone https://github.com/martin-nolan/timezone-shift.git
-cd timezone-shift
-npm install
+inWorkingHours(date, timezone); // Check business hours
+inWorkingHoursNow(); // Check current business hours
 ```
 
-Run tests:
+### DST Transitions
 
-```bash
-npm test
+```typescript
+import { dstTransitionDates, nextDstTransition } from "timezone-shift";
+
+dstTransitionDates(2024, "Europe/London"); // Get year's DST dates
+nextDstTransition(date, timezone); // Next transition
 ```
+
+## Auto-Detection
+
+```typescript
+import { getDetectedTimezone, getTimezoneInfo } from "timezone-shift";
+
+const timezone = getDetectedTimezone(); // "Europe/London"
+const info = getTimezoneInfo(); // Detailed timezone info
+```
+
+## Supported Timezones
+
+Works with any IANA timezone identifier:
+
+- `Europe/London`, `America/New_York`, `Asia/Tokyo`
+- `Pacific/Auckland`, `America/Sao_Paulo`, `Asia/Kolkata`
+- And 400+ more...
+
+## Migration
+
+**No breaking changes** - all existing code continues to work. New auto-detection functions are optional additions.
 
 ## License
 
-MIT - see [LICENSE](LICENSE) file.
-
----
-
-**Need more examples?** Check out the [Release Notes](RELEASE_NOTES.md) for detailed documentation and use cases.
+MIT

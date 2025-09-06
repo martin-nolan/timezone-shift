@@ -2,8 +2,8 @@
  * Input validation utilities
  */
 
-import type { TimeParts } from "./types.js";
-import { getDaysInMonth } from "./utils/date-utils.js";
+import type { TimeParts } from "../types.js";
+import { getDaysInMonth } from "./date-utils.js";
 
 /**
  * Validate a Date object
@@ -103,61 +103,19 @@ export function validateTimezone(timezone: string): void {
 }
 
 /**
- * Validate working hours time string (HH:MM format)
- * @param time - Time string to validate
- * @throws Error if the time format is invalid
+ * Validate that a timezone is supported by the platform
+ * @param timezone - Timezone identifier to validate
+ * @throws Error if the timezone is not available on the platform
  */
-export function validateTimeString(time: string): void {
-  if (typeof time !== "string") {
-    throw new Error("Invalid time: expected string");
-  }
-
-  const timeRegex = /^([01][0-9]|2[0-3]):([0-5][0-9])$/;
-  if (!timeRegex.test(time)) {
+export function validatePlatformTimezone(timezone: string): void {
+  try {
+    // Test if Intl.DateTimeFormat supports this timezone
+    new Intl.DateTimeFormat("en", { timeZone: timezone });
+  } catch (error) {
     throw new Error(
-      `Invalid time format: ${time}. Expected HH:MM format (e.g., '09:00', '17:30')`
+      `Timezone '${timezone}' not available on this system. ` +
+        `Please ensure your system has up-to-date timezone data. ` +
+        `Error: ${error instanceof Error ? error.message : String(error)}`
     );
-  }
-}
-
-/**
- * Validate year
- * @param year - Year to validate
- * @throws Error if the year is invalid
- */
-export function validateYear(year: number): void {
-  if (!Number.isInteger(year)) {
-    throw new Error("Invalid year: expected integer");
-  }
-
-  if (year < 1970 || year > 2100) {
-    throw new Error(
-      `Invalid year: ${year} outside supported range (1970-2100)`
-    );
-  }
-}
-
-/**
- * Validate working days array
- * @param workingDays - Array of working days (0=Sunday, 1=Monday, etc.)
- * @throws Error if the working days are invalid
- */
-export function validateWorkingDays(workingDays: number[]): void {
-  if (!Array.isArray(workingDays)) {
-    throw new Error("Invalid working days: expected array");
-  }
-
-  for (const day of workingDays) {
-    if (!Number.isInteger(day) || day < 0 || day > 6) {
-      throw new Error(
-        `Invalid working day: ${day}. Expected integers 0-6 (0=Sunday, 1=Monday, etc.)`
-      );
-    }
-  }
-
-  // Check for duplicates
-  const uniqueDays = new Set(workingDays);
-  if (uniqueDays.size !== workingDays.length) {
-    throw new Error("Invalid working days: contains duplicates");
   }
 }

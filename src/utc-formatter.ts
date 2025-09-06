@@ -2,8 +2,8 @@
  * UTC string formatting utilities
  */
 
-import { validateDate } from "./validator.js";
-import { pad } from "./utils.js";
+import { validateDate } from "./utils/validation.js";
+import { pad } from "./utils/formatting.js";
 
 /**
  * Format a Date as a stable UTC string in "YYYY-MM-DD HH:mm:ss.SSSSSZ" format
