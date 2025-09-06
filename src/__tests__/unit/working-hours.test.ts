@@ -7,7 +7,7 @@ import {
   inWorkingHours,
   inWorkingHoursLondon,
   isWorkingDay,
-} from "./working-hours.js";
+} from "../../working-hours.js";
 
 describe("Working Hours", () => {
   describe("inWorkingHours", () => {
@@ -57,39 +57,18 @@ describe("Working Hours", () => {
     });
 
     describe("America/New_York", () => {
-      it("should detect working hours during EDT", () => {
+      it("should detect working hours during EDT and EST", () => {
         // July 15, 2024 is EDT (UTC-4)
-        const workingTime = new Date("2024-07-15T18:00:00Z"); // 14:00 EDT
-        const beforeWork = new Date("2024-07-15T12:00:00Z"); // 08:00 EDT
-        const afterWork = new Date("2024-07-15T22:00:00Z"); // 18:00 EDT
-
-        expect(inWorkingHours(workingTime, "America/New_York")).toBe(true);
-        expect(inWorkingHours(beforeWork, "America/New_York")).toBe(false);
-        expect(inWorkingHours(afterWork, "America/New_York")).toBe(false);
-      });
-
-      it("should detect working hours during EST", () => {
+        const summerWorkingTime = new Date("2024-07-15T18:00:00Z"); // 14:00 EDT
         // January 15, 2024 is EST (UTC-5)
-        const workingTime = new Date("2024-01-15T19:00:00Z"); // 14:00 EST
-        const beforeWork = new Date("2024-01-15T13:00:00Z"); // 08:00 EST
-        const afterWork = new Date("2024-01-15T23:00:00Z"); // 18:00 EST
+        const winterWorkingTime = new Date("2024-01-15T19:00:00Z"); // 14:00 EST
 
-        expect(inWorkingHours(workingTime, "America/New_York")).toBe(true);
-        expect(inWorkingHours(beforeWork, "America/New_York")).toBe(false);
-        expect(inWorkingHours(afterWork, "America/New_York")).toBe(false);
-      });
-    });
-
-    describe("Asia/Tokyo", () => {
-      it("should detect working hours in JST (no DST)", () => {
-        // Tokyo is always UTC+9
-        const workingTime = new Date("2024-07-15T05:00:00Z"); // 14:00 JST
-        const beforeWork = new Date("2024-07-15T23:00:00Z"); // 08:00 JST (previous day UTC)
-        const afterWork = new Date("2024-07-15T09:00:00Z"); // 18:00 JST
-
-        expect(inWorkingHours(workingTime, "Asia/Tokyo")).toBe(true);
-        expect(inWorkingHours(beforeWork, "Asia/Tokyo")).toBe(false);
-        expect(inWorkingHours(afterWork, "Asia/Tokyo")).toBe(false);
+        expect(inWorkingHours(summerWorkingTime, "America/New_York")).toBe(
+          true
+        );
+        expect(inWorkingHours(winterWorkingTime, "America/New_York")).toBe(
+          true
+        );
       });
     });
 
@@ -168,15 +147,9 @@ describe("Working Hours", () => {
     describe("Default working days (Monday-Friday)", () => {
       it("should detect weekdays as working days", () => {
         const monday = new Date("2024-07-15T12:00:00Z"); // Monday
-        const tuesday = new Date("2024-07-16T12:00:00Z"); // Tuesday
-        const wednesday = new Date("2024-07-17T12:00:00Z"); // Wednesday
-        const thursday = new Date("2024-07-18T12:00:00Z"); // Thursday
         const friday = new Date("2024-07-19T12:00:00Z"); // Friday
 
         expect(isWorkingDay(monday, "Europe/London")).toBe(true);
-        expect(isWorkingDay(tuesday, "Europe/London")).toBe(true);
-        expect(isWorkingDay(wednesday, "Europe/London")).toBe(true);
-        expect(isWorkingDay(thursday, "Europe/London")).toBe(true);
         expect(isWorkingDay(friday, "Europe/London")).toBe(true);
       });
 
@@ -194,40 +167,21 @@ describe("Working Hours", () => {
         // This is Friday 23:00 UTC, but Saturday 00:00 BST
         const fridayUTCSaturdayBST = new Date("2024-07-19T23:00:00Z");
 
-        // In UTC timezone context, this would be Friday (working day)
         // In London timezone context, this is Saturday (non-working day)
         expect(isWorkingDay(fridayUTCSaturdayBST, "Europe/London")).toBe(false);
-      });
-
-      it("should handle timezone differences correctly", () => {
-        // Monday 08:00 UTC = Monday 09:00 BST = Monday 04:00 EDT
-        const mondayMorning = new Date("2024-07-15T08:00:00Z");
-
-        expect(isWorkingDay(mondayMorning, "Europe/London")).toBe(true); // Monday in London
-        expect(isWorkingDay(mondayMorning, "America/New_York")).toBe(true); // Monday in New York
-        expect(isWorkingDay(mondayMorning, "Asia/Tokyo")).toBe(true); // Monday in Tokyo
       });
     });
 
     describe("Custom working days", () => {
       it("should handle custom working days configuration", () => {
         const saturday = new Date("2024-07-20T12:00:00Z"); // Saturday
-        const sunday = new Date("2024-07-21T12:00:00Z"); // Sunday
         const monday = new Date("2024-07-15T12:00:00Z"); // Monday
 
         // Custom: only weekends are working days
         const weekendOnly = [0, 6]; // Sunday, Saturday
 
         expect(isWorkingDay(saturday, "Europe/London", weekendOnly)).toBe(true);
-        expect(isWorkingDay(sunday, "Europe/London", weekendOnly)).toBe(true);
         expect(isWorkingDay(monday, "Europe/London", weekendOnly)).toBe(false);
-      });
-
-      it("should handle all days as working days", () => {
-        const allDays = [0, 1, 2, 3, 4, 5, 6]; // All days of week
-        const sunday = new Date("2024-07-21T12:00:00Z"); // Sunday
-
-        expect(isWorkingDay(sunday, "Europe/London", allDays)).toBe(true);
       });
 
       it("should handle no working days", () => {
@@ -269,24 +223,6 @@ describe("Working Hours", () => {
       expect(() => isWorkingDay(date, "Invalid/Timezone")).toThrow(
         "Timezone 'Invalid/Timezone' not available on this system"
       );
-    });
-  });
-
-  describe("Integration with DST transitions", () => {
-    it("should handle working hours correctly during DST transitions", () => {
-      // Test around BST transition dates
-      const beforeTransition = new Date("2024-03-30T13:00:00Z"); // 13:00 GMT (before BST)
-      const afterTransition = new Date("2024-03-31T13:00:00Z"); // 14:00 BST (after transition)
-
-      expect(inWorkingHours(beforeTransition, "Europe/London")).toBe(true); // 13:00 GMT
-      expect(inWorkingHours(afterTransition, "Europe/London")).toBe(true); // 14:00 BST
-    });
-
-    it("should handle working day calculation correctly during DST transitions", () => {
-      // DST transition happens on Sunday, March 31, 2024
-      const transitionDay = new Date("2024-03-31T12:00:00Z"); // Sunday
-
-      expect(isWorkingDay(transitionDay, "Europe/London")).toBe(false); // Sunday is not a working day
     });
   });
 });

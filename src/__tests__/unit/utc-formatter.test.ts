@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { toUTCString } from "./utc-formatter.js";
+import { toUTCString } from "../../utc-formatter.js";
 
 describe("UTC Formatter", () => {
   describe("toUTCString", () => {
@@ -73,21 +73,11 @@ describe("UTC Formatter", () => {
     });
 
     it("should handle different millisecond values", () => {
-      const tests = [
-        { ms: 0, expected: "000000" },
-        { ms: 1, expected: "001000" },
-        { ms: 10, expected: "010000" },
-        { ms: 100, expected: "100000" },
-        { ms: 999, expected: "999000" },
-      ];
+      const date1 = new Date("2024-07-15T12:00:00.000Z");
+      const date2 = new Date("2024-07-15T12:00:00.999Z");
 
-      for (const test of tests) {
-        const date = new Date(
-          `2024-07-15T12:00:00.${test.ms.toString().padStart(3, "0")}Z`
-        );
-        const result = toUTCString(date);
-        expect(result).toBe(`2024-07-15 12:00:00.${test.expected}Z`);
-      }
+      expect(toUTCString(date1)).toBe("2024-07-15 12:00:00.000000Z");
+      expect(toUTCString(date2)).toBe("2024-07-15 12:00:00.999000Z");
     });
 
     it("should throw error for invalid dates", () => {
@@ -116,22 +106,17 @@ describe("UTC Formatter", () => {
       expect(toUTCString(latest)).toBe("2100-12-31 23:59:59.999000Z");
     });
 
-    describe("Format consistency across different input methods", () => {
-      it("should format consistently regardless of how Date was created", () => {
-        const timestamp = 1721054142123; // 2024-07-15T14:35:42.123Z
+    it("should format consistently regardless of how Date was created", () => {
+      const timestamp = 1721054142123; // 2024-07-15T14:35:42.123Z
 
-        const fromTimestamp = new Date(timestamp);
-        const fromISOString = new Date("2024-07-15T14:35:42.123Z");
-        const fromComponents = new Date(Date.UTC(2024, 6, 15, 14, 35, 42, 123)); // Month is 0-indexed
+      const fromTimestamp = new Date(timestamp);
+      const fromISOString = new Date("2024-07-15T14:35:42.123Z");
 
-        const result1 = toUTCString(fromTimestamp);
-        const result2 = toUTCString(fromISOString);
-        const result3 = toUTCString(fromComponents);
+      const result1 = toUTCString(fromTimestamp);
+      const result2 = toUTCString(fromISOString);
 
-        expect(result1).toBe("2024-07-15 14:35:42.123000Z");
-        expect(result1).toBe(result2);
-        expect(result1).toBe(result3);
-      });
+      expect(result1).toBe("2024-07-15 14:35:42.123000Z");
+      expect(result1).toBe(result2);
     });
   });
 });

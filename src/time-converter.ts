@@ -3,16 +3,14 @@
  */
 
 import type { TimeParts } from "./types.js";
-import {
-  getTimezoneMetadata,
-  validatePlatformTimezone,
-} from "./timezone-registry.js";
+import { getTimezoneMetadata } from "./timezone-registry.js";
 import {
   validateDate,
   validateTimezone,
   validateTimeParts,
-} from "./validator.js";
-import { DEFAULT_TIMEZONE } from "./index.js";
+  validatePlatformTimezone,
+} from "./utils/validation.js";
+import { timezoneDetector } from "./timezone-detector.js";
 
 /**
  * Extract timezone-local time components from a UTC Date
@@ -21,39 +19,44 @@ import { DEFAULT_TIMEZONE } from "./index.js";
  * DST transitions and timezone offsets. The returned TimeParts represent the local
  * time as it would appear on a clock in the specified timezone.
  *
+ * When no timezone is provided, automatically detects the user's timezone.
+ *
  * @param date - The UTC date to convert (must be a valid Date object)
- * @param timezone - IANA timezone identifier (defaults to 'Europe/London')
+ * @param timezone - IANA timezone identifier (optional, auto-detects if omitted)
  * @returns TimeParts object with local time components
  *
  * @throws {Error} If date is invalid (NaN) or outside supported range (1970-2100)
  * @throws {Error} If timezone is not supported or unavailable on platform
+ * @throws {TimezoneDetectionError} If timezone detection fails and fallback is invalid
  *
  * @example
  * ```typescript
  * const utcDate = new Date('2024-07-15T12:00:00Z');  // UTC noon
  *
+ * // With explicit timezone
  * const londonParts = toTimezoneParts(utcDate, 'Europe/London');
  * console.log(londonParts);  // { year: 2024, month: 7, day: 15, hour: 13, minute: 0, second: 0 } (BST)
  *
  * const newYorkParts = toTimezoneParts(utcDate, 'America/New_York');
  * console.log(newYorkParts); // { year: 2024, month: 7, day: 15, hour: 8, minute: 0, second: 0 } (EDT)
  *
- * const tokyoParts = toTimezoneParts(utcDate, 'Asia/Tokyo');
- * console.log(tokyoParts);   // { year: 2024, month: 7, day: 15, hour: 21, minute: 0, second: 0 } (JST)
+ * // With auto-detection (uses user's timezone)
+ * const localParts = toTimezoneParts(utcDate);
+ * console.log(localParts);   // Time components in user's detected timezone
  * ```
  */
-export function toTimezoneParts(
-  date: Date,
-  timezone: string = DEFAULT_TIMEZONE
-): TimeParts {
+export function toTimezoneParts(date: Date, timezone?: string): TimeParts {
   validateDate(date);
-  validateTimezone(timezone);
 
-  validatePlatformTimezone(timezone);
+  // Use auto-detection if no timezone provided
+  const effectiveTimezone = timezone ?? timezoneDetector.getDetectedTimezone();
+  validateTimezone(effectiveTimezone);
+
+  validatePlatformTimezone(effectiveTimezone);
 
   // Use Intl.DateTimeFormat to get timezone-local components
   const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timezone,
+    timeZone: effectiveTimezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -108,46 +111,49 @@ export function toLondonParts(date: Date): TimeParts {
  * DST edge cases. Uses a ±180 minute search window with 1-minute resolution to
  * resolve ambiguous times.
  *
+ * When no timezone is provided, automatically detects the user's timezone.
+ *
  * **DST Edge Case Handling:**
  * - **Spring forward gaps**: Non-existent times are advanced to the first valid time
  * - **Autumn fallback duplicates**: Ambiguous times resolve to first occurrence (DST time)
  *
  * @param parts - The local time components in the specified timezone
- * @param timezone - IANA timezone identifier (defaults to 'Europe/London')
+ * @param timezone - IANA timezone identifier (optional, auto-detects if omitted)
  * @returns UTC Date object
  *
  * @throws {Error} If time parts are invalid (e.g., month 13, hour 25)
  * @throws {Error} If timezone is not supported or unavailable on platform
  * @throws {Error} If time cannot be resolved after exhaustive search
+ * @throws {TimezoneDetectionError} If timezone detection fails and fallback is invalid
  *
  * @example
  * ```typescript
- * // Normal case
+ * // Normal case with explicit timezone
  * const normalParts = { year: 2024, month: 7, day: 15, hour: 14, minute: 30, second: 0 };
  * const utcDate = fromTimezoneParts(normalParts, 'Europe/London');
  * console.log(utcDate.toISOString()); // "2024-07-15T13:30:00.000Z" (BST-1)
+ *
+ * // With auto-detection (uses user's timezone)
+ * const localParts = { year: 2024, month: 7, day: 15, hour: 14, minute: 30, second: 0 };
+ * const autoUtcDate = fromTimezoneParts(localParts);
+ * console.log(autoUtcDate.toISOString()); // UTC time based on user's detected timezone
  *
  * // Spring forward gap (01:30 doesn't exist in London on March 31, 2024)
  * const gapParts = { year: 2024, month: 3, day: 31, hour: 1, minute: 30, second: 0 };
  * const resolvedGap = fromTimezoneParts(gapParts, 'Europe/London');
  * const resolvedLocal = toTimezoneParts(resolvedGap, 'Europe/London');
  * console.log(resolvedLocal.hour); // 2 (or later) - advanced to valid time
- *
- * // Autumn fallback duplicate (01:30 occurs twice on October 27, 2024)
- * const duplicateParts = { year: 2024, month: 10, day: 27, hour: 1, minute: 30, second: 0 };
- * const resolvedDup = fromTimezoneParts(duplicateParts, 'Europe/London');
- * console.log(isDST(resolvedDup, 'Europe/London')); // true (first occurrence, BST)
  * ```
  */
-export function fromTimezoneParts(
-  parts: TimeParts,
-  timezone: string = DEFAULT_TIMEZONE
-): Date {
+export function fromTimezoneParts(parts: TimeParts, timezone?: string): Date {
   validateTimeParts(parts);
-  validateTimezone(timezone);
 
-  const metadata = getTimezoneMetadata(timezone);
-  validatePlatformTimezone(timezone);
+  // Use auto-detection if no timezone provided
+  const effectiveTimezone = timezone ?? timezoneDetector.getDetectedTimezone();
+  validateTimezone(effectiveTimezone);
+
+  const metadata = getTimezoneMetadata(effectiveTimezone);
+  validatePlatformTimezone(effectiveTimezone);
 
   // Build initial guess using UTC constructor, then adjust for timezone offset
   // Start with a UTC date and adjust by the expected timezone offset
@@ -177,7 +183,7 @@ export function fromTimezoneParts(
           ];
 
     for (const candidate of candidates) {
-      if (matchesTimezoneParts(candidate, parts, timezone)) {
+      if (matchesTimezoneParts(candidate, parts, effectiveTimezone)) {
         return candidate; // First match wins
       }
     }
@@ -189,7 +195,7 @@ export function fromTimezoneParts(
     // Check every hour
     const candidate = new Date(guess.getTime() + offset * 60000);
     try {
-      const candidateParts = toTimezoneParts(candidate, timezone);
+      const candidateParts = toTimezoneParts(candidate, effectiveTimezone);
       // If we can get parts and the date/time is reasonable, use it
       if (
         candidateParts.year === parts.year &&
@@ -204,8 +210,9 @@ export function fromTimezoneParts(
   }
 
   throw new Error(
-    `Cannot resolve time parts for ${timezone}: ${JSON.stringify(parts)}. ` +
-      `This may be a non-existent time during DST transition.`
+    `Cannot resolve time parts for ${effectiveTimezone}: ${JSON.stringify(
+      parts
+    )}. ` + `This may be a non-existent time during DST transition.`
   );
 }
 

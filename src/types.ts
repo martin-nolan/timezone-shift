@@ -101,3 +101,97 @@ export type SupportedTimezone =
  * Working days configuration (0 = Sunday, 1 = Monday, etc.)
  */
 export type WorkingDays = number[];
+
+/**
+ * Result of timezone detection with metadata
+ */
+export interface TimezoneDetectionResult {
+  /** Detected timezone identifier */
+  timezone: string;
+  /** Source of the detection */
+  source: "browser" | "node" | "env" | "fallback";
+  /** Confidence level of the detection */
+  confidence: "high" | "medium" | "low";
+}
+
+/**
+ * Information about the current timezone
+ */
+export interface TimezoneInfo {
+  /** IANA timezone identifier */
+  id: string;
+  /** Human-readable display name */
+  displayName: string;
+  /** Current UTC offset in minutes */
+  currentOffset: number;
+  /** Whether currently in DST */
+  isDST: boolean;
+  /** Current timezone abbreviation */
+  abbreviation: string;
+  /** Source of timezone metadata */
+  source: "hardcoded" | "runtime";
+}
+
+/**
+ * Cache entry with timestamp and optional TTL
+ */
+export interface CacheEntry<T> {
+  /** Cached value */
+  value: T;
+  /** Timestamp when cached */
+  timestamp: Date;
+  /** Time-to-live in milliseconds (optional) */
+  ttl?: number;
+}
+
+/**
+ * Cache statistics interface
+ */
+export interface CacheStats {
+  /** Total number of entries */
+  totalEntries: number;
+  /** Number of active (non-expired) entries */
+  activeEntries: number;
+  /** Number of expired entries */
+  expiredEntries: number;
+  /** Cache hit rate as percentage */
+  hitRate: number;
+}
+
+/**
+ * Extended timezone metadata for runtime-discovered timezones
+ */
+export interface RuntimeTimezoneMetadata extends TimezoneMetadata {
+  /** Indicates this is a runtime-discovered timezone */
+  isRuntime: true;
+  /** When this timezone was first detected */
+  detectedAt: Date;
+  /** When this timezone was last validated */
+  validatedAt: Date;
+}
+
+/**
+ * Configuration options for timezone detection
+ */
+export interface DetectionConfig {
+  /** Fallback timezone to use if detection fails */
+  fallbackTimezone?: string;
+  /** Whether to enable caching of detection results */
+  enableCaching?: boolean;
+  /** Preferred detection source in environments that support multiple methods */
+  preferredSource?: "browser" | "node" | "env";
+}
+
+/**
+ * Custom error for timezone detection failures
+ */
+export class TimezoneDetectionError extends Error {
+  constructor(
+    message: string,
+    public readonly source: string,
+    public readonly originalError?: Error
+  ) {
+    super(message);
+    this.name = "TimezoneDetectionError";
+  }
+}

@@ -10,7 +10,7 @@ import {
   validateTimeString,
   validateYear,
   validateWorkingDays,
-} from "./validator.js";
+} from "../../validator.js";
 
 describe("Validator", () => {
   describe("validateDate", () => {

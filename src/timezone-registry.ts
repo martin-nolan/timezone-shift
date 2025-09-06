@@ -5,7 +5,12 @@
  * Actual DST transitions are determined by platform timezone databases.
  */
 
-import type { TimezoneMetadata, SupportedTimezone } from "./types.js";
+import type {
+  TimezoneMetadata,
+  SupportedTimezone,
+  RuntimeTimezoneMetadata,
+} from "./types.js";
+import { runtimeRegistry } from "./runtime-registry.js";
 
 /**
  * Registry of supported timezone metadata
@@ -91,16 +96,25 @@ export const TIMEZONE_REGISTRY: Record<SupportedTimezone, TimezoneMetadata> = {
  * @returns Timezone metadata
  * @throws Error if timezone is not supported
  */
-export function getTimezoneMetadata(timezone: string): TimezoneMetadata {
-  const metadata = TIMEZONE_REGISTRY[timezone as SupportedTimezone];
-  if (!metadata) {
+export function getTimezoneMetadata(
+  timezone: string
+): TimezoneMetadata | RuntimeTimezoneMetadata {
+  // First check hardcoded registry
+  const hardcodedMetadata = TIMEZONE_REGISTRY[timezone as SupportedTimezone];
+  if (hardcodedMetadata) {
+    return hardcodedMetadata;
+  }
+
+  // If not in hardcoded registry, try runtime registry
+  try {
+    return runtimeRegistry.getMetadata(timezone);
+  } catch {
     throw new Error(
-      `Unsupported timezone: ${timezone}. Supported timezones: ${Object.keys(
-        TIMEZONE_REGISTRY
-      ).join(", ")}`
+      `Unsupported timezone: ${timezone}. Supported timezones: ${getSupportedTimezones().join(
+        ", "
+      )}`
     );
   }
-  return metadata;
 }
 
 /**
@@ -108,7 +122,22 @@ export function getTimezoneMetadata(timezone: string): TimezoneMetadata {
  * @param timezone - The timezone identifier to check
  * @returns True if the timezone is supported
  */
-export function isSupportedTimezone(
+export function isSupportedTimezone(timezone: string): boolean {
+  // Check hardcoded registry first
+  if (timezone in TIMEZONE_REGISTRY) {
+    return true;
+  }
+
+  // Check runtime registry
+  return runtimeRegistry.isRegistered(timezone);
+}
+
+/**
+ * Check if a timezone is in the hardcoded registry
+ * @param timezone - The timezone identifier to check
+ * @returns True if the timezone is in the hardcoded registry
+ */
+export function isHardcodedTimezone(
   timezone: string
 ): timezone is SupportedTimezone {
   return timezone in TIMEZONE_REGISTRY;
@@ -116,26 +145,38 @@ export function isSupportedTimezone(
 
 /**
  * Validate that the platform supports a timezone
- * @param timezone - The timezone identifier to validate
- * @throws Error if the timezone is not available on the platform
- */
-export function validatePlatformTimezone(timezone: string): void {
-  try {
-    // Test if Intl.DateTimeFormat supports this timezone
-    new Intl.DateTimeFormat("en", { timeZone: timezone });
-  } catch (error) {
-    throw new Error(
-      `Timezone '${timezone}' not available on this system. ` +
-        `Please ensure your system has up-to-date timezone data. ` +
-        `Error: ${error instanceof Error ? error.message : String(error)}`
-    );
-  }
-}
-
 /**
  * Get all supported timezone identifiers
  * @returns Array of supported timezone identifiers
  */
-export function getSupportedTimezones(): SupportedTimezone[] {
+export function getSupportedTimezones(): string[] {
+  return runtimeRegistry.getAllTimezones();
+}
+
+/**
+ * Get only hardcoded timezone identifiers
+ * @returns Array of hardcoded timezone identifiers
+ */
+export function getHardcodedTimezones(): SupportedTimezone[] {
   return Object.keys(TIMEZONE_REGISTRY) as SupportedTimezone[];
+}
+
+/**
+ * Validate and register a timezone for runtime use
+ * @param timezone - The timezone identifier to validate and register
+ * @returns Runtime timezone metadata
+ * @throws Error if timezone is invalid
+ */
+export function validateAndRegisterTimezone(
+  timezone: string
+): RuntimeTimezoneMetadata {
+  return runtimeRegistry.validateAndRegister(timezone);
+}
+
+/**
+ * Clear runtime timezone cache
+ * @param timezone - Specific timezone to clear, or undefined to clear all runtime timezones
+ */
+export function clearRuntimeTimezoneCache(timezone?: string): void {
+  runtimeRegistry.clearCache(timezone);
 }

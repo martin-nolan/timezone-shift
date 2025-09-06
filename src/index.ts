@@ -15,15 +15,27 @@ export type {
   NextChange,
   SupportedTimezone,
   WorkingDays,
+  TimezoneDetectionResult,
+  TimezoneInfo,
+  CacheEntry,
+  CacheStats,
+  RuntimeTimezoneMetadata,
+  DetectionConfig,
 } from "./types.js";
 
 // Export timezone registry utilities
 export {
   getTimezoneMetadata,
   isSupportedTimezone,
-  validatePlatformTimezone,
+  isHardcodedTimezone,
   getSupportedTimezones,
+  getHardcodedTimezones,
+  validateAndRegisterTimezone,
+  clearRuntimeTimezoneCache,
 } from "./timezone-registry.js";
+
+// Export validation utilities
+export { validatePlatformTimezone } from "./utils/validation.js";
 
 // DST Detection functions
 export { isDST, isBST } from "./dst-detector.js";
@@ -57,20 +69,33 @@ export {
   nextClockChange,
 } from "./dst-transitions.js";
 
-/**
- * Default timezone for convenience functions
- */
-export const DEFAULT_TIMEZONE = "Europe/London";
+// Timezone detection utilities
+export {
+  TimezoneDetector,
+  TimezoneDetectionError,
+  timezoneDetector,
+} from "./timezone-detector.js";
 
-/**
- * Default working hours
- */
-export const DEFAULT_WORKING_HOURS = {
-  start: "09:00",
-  end: "17:30",
-} as const;
+// Cache management utilities
+export { CacheManager, timezoneCache } from "./cache-manager.js";
 
-/**
- * Default working days (Monday-Friday)
- */
-export const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5] as const;
+// Runtime timezone registry
+export { RuntimeRegistry, runtimeRegistry } from "./runtime-registry.js";
+
+// Auto-detection convenience functions
+export {
+  isDSTNow,
+  getCurrentTimezoneParts,
+  inWorkingHoursNow,
+  formatNow,
+  getDetectedTimezone,
+  getTimezoneInfo,
+  getTimezoneDetectionError,
+} from "./auto-functions.js";
+
+// Constants (re-exported from constants.ts to maintain backward compatibility)
+export {
+  DEFAULT_TIMEZONE,
+  DEFAULT_WORKING_HOURS,
+  DEFAULT_WORKING_DAYS,
+} from "./constants.js";

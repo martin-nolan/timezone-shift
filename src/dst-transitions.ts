@@ -8,13 +8,14 @@ import type {
   ClockChanges,
   NextChange,
 } from "./types.js";
+import { getTimezoneMetadata } from "./timezone-registry.js";
 import {
-  getTimezoneMetadata,
+  validateTimezone,
+  validateDate,
   validatePlatformTimezone,
-} from "./timezone-registry.js";
-import { validateYear, validateTimezone, validateDate } from "./validator.js";
+} from "./utils/validation.js";
 import { isDST } from "./dst-detector.js";
-import { DEFAULT_TIMEZONE } from "./index.js";
+import { DEFAULT_TIMEZONE } from "./constants.js";
 
 /**
  * Get DST transition dates for a given year and timezone
@@ -50,7 +51,16 @@ export function dstTransitionDates(
   year: number,
   timezone: string = DEFAULT_TIMEZONE
 ): DstTransitions | null {
-  validateYear(year);
+  // Validate year inline (only used here)
+  if (!Number.isInteger(year)) {
+    throw new Error("Invalid year: expected integer");
+  }
+  if (year < 1970 || year > 2100) {
+    throw new Error(
+      `Invalid year: ${year} outside supported range (1970-2100)`
+    );
+  }
+
   validateTimezone(timezone);
 
   const metadata = getTimezoneMetadata(timezone);

@@ -5,12 +5,14 @@
  * to detect DST status, ensuring always-current DST rules.
  */
 
+import { getTimezoneMetadata } from "./timezone-registry.js";
 import {
-  getTimezoneMetadata,
+  validateDate,
+  validateTimezone,
   validatePlatformTimezone,
-} from "./timezone-registry.js";
-import { validateDate, validateTimezone } from "./validator.js";
-import { DEFAULT_TIMEZONE } from "./index.js";
+} from "./utils/validation.js";
+import { getTimezoneOffset } from "./utils/date-utils.js";
+import { timezoneDetector } from "./timezone-detector.js";
 
 /**
  * Check if a date is in Daylight Saving Time for a given timezone
@@ -19,32 +21,40 @@ import { DEFAULT_TIMEZONE } from "./index.js";
  * always-current DST detection. Supports all major timezones with automatic
  * fallback to offset-based detection when abbreviations are unavailable.
  *
+ * When no timezone is provided, automatically detects the user's timezone.
+ *
  * @param date - The date to check (must be a valid Date object)
- * @param timezone - IANA timezone identifier (defaults to 'Europe/London')
- * @returns `true` if the date is in DST for the specified timezone
+ * @param timezone - IANA timezone identifier (optional, auto-detects if omitted)
+ * @returns `true` if the date is in DST for the specified or detected timezone
  *
  * @throws {Error} If date is invalid (NaN) or outside supported range (1970-2100)
  * @throws {Error} If timezone is not supported or unavailable on platform
+ * @throws {TimezoneDetectionError} If timezone detection fails and fallback is invalid
  *
  * @example
  * ```typescript
  * const summerDate = new Date('2024-07-15T12:00:00Z');
  * const winterDate = new Date('2024-01-15T12:00:00Z');
  *
+ * // With explicit timezone
  * console.log(isDST(summerDate, 'Europe/London'));  // true (BST)
  * console.log(isDST(winterDate, 'Europe/London'));  // false (GMT)
  * console.log(isDST(summerDate, 'Asia/Tokyo'));     // false (no DST)
+ *
+ * // With auto-detection (uses user's timezone)
+ * console.log(isDST(summerDate));  // true/false based on user's timezone
+ * console.log(isDST(winterDate));  // true/false based on user's timezone
  * ```
  */
-export function isDST(
-  date: Date,
-  timezone: string = DEFAULT_TIMEZONE
-): boolean {
+export function isDST(date: Date, timezone?: string): boolean {
   validateDate(date);
-  validateTimezone(timezone);
 
-  const metadata = getTimezoneMetadata(timezone);
-  validatePlatformTimezone(timezone);
+  // Use auto-detection if no timezone provided
+  const effectiveTimezone = timezone ?? timezoneDetector.getDetectedTimezone();
+  validateTimezone(effectiveTimezone);
+
+  const metadata = getTimezoneMetadata(effectiveTimezone);
+  validatePlatformTimezone(effectiveTimezone);
 
   // If timezone doesn't have DST, it's never in DST
   if (!metadata.dstOffset) {
@@ -53,7 +63,7 @@ export function isDST(
 
   // Use Intl.DateTimeFormat to get timezone information
   const formatter = new Intl.DateTimeFormat("en", {
-    timeZone: timezone,
+    timeZone: effectiveTimezone,
     timeZoneName: "short",
   });
 
@@ -64,11 +74,11 @@ export function isDST(
 
   if (!timeZoneName) {
     // Fallback: compare offset with expected DST offset
-    return isDSTByOffset(date, timezone);
+    return isDSTByOffset(date, effectiveTimezone);
   }
 
   // Check if the timezone name indicates DST
-  return isDSTAbbreviation(timeZoneName, timezone, date);
+  return isDSTAbbreviation(timeZoneName, effectiveTimezone, date);
 }
 
 /**
@@ -170,44 +180,4 @@ function isDSTByOffset(date: Date, timezone: string): boolean {
 
   // Compare with expected DST offset
   return currentOffset === metadata.dstOffset;
-}
-
-/**
- * Get the timezone offset in minutes for a specific date and timezone
- * @param date - The date to check
- * @param timezone - The timezone identifier
- * @returns Offset in minutes from UTC (positive for east of UTC)
- */
-function getTimezoneOffset(date: Date, timezone: string): number {
-  // Create a date in the target timezone
-  const utcTime = date.getTime();
-
-  // Get the local time in the target timezone
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(date);
-  const year = parseInt(parts.find((p) => p.type === "year")?.value ?? "0");
-  const month =
-    parseInt(parts.find((p) => p.type === "month")?.value ?? "0") - 1; // Month is 0-indexed
-  const day = parseInt(parts.find((p) => p.type === "day")?.value ?? "0");
-  const hour = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0");
-  const minute = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0");
-  const second = parseInt(parts.find((p) => p.type === "second")?.value ?? "0");
-
-  // Create a local date object (this will be in the system timezone)
-  const localTime = new Date(year, month, day, hour, minute, second).getTime();
-
-  // Calculate the offset: (local time - UTC time) / (1000 * 60) = offset in minutes
-  const offsetMinutes = (localTime - utcTime) / (1000 * 60);
-
-  return Math.round(offsetMinutes);
 }
