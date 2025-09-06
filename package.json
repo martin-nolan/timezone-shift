@@ -1,6 +1,6 @@
 {
   "name": "timezone-shift",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Lightweight timezone utility with multi-timezone DST support for TypeScript/JavaScript",
   "type": "module",
   "main": "./dist/index.cjs",
