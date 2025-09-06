@@ -37,9 +37,13 @@ jobs:
 
       - name: Run tests
         run: npm test
+        env:
+          TZ: Europe/London
 
       - name: Run tests with coverage
         run: npm run test:coverage
+        env:
+          TZ: Europe/London
 
       - name: Build project
         run: npm run build
@@ -122,6 +126,8 @@ jobs:
 
       - name: Run tests
         run: npm test
+        env:
+          TZ: Europe/London
 
       - name: Build project
         run: npm run build
@@ -147,6 +153,8 @@ jobs:
         run: npm run build
 
       - name: Run performance benchmarks
+        env:
+          TZ: Europe/London
         run: |
           node -e "
             try {
